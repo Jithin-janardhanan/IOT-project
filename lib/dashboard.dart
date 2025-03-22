@@ -96,7 +96,7 @@ class _HomePageState extends State<HomePage> {
 
     var request = http.Request(
       'POST',
-      Uri.parse('http://192.168.20.7:8000/logout/'),
+      Uri.parse('http://192.168.20.14:8000/logout/'),
     );
 
     request.headers.addAll(headers);

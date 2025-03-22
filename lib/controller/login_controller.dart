@@ -33,7 +33,7 @@ class AuthController extends ChangeNotifier {
         'Content-Type': 'application/json'
       };
 
-      var uri = Uri.parse('http://192.168.20.7:8000/login/');
+      var uri = Uri.parse('http://192.168.20.14:8000/login/');
       var body = json.encode({"phone_number": phone, "password": password});
 
       var response = await http
@@ -56,13 +56,13 @@ class AuthController extends ChangeNotifier {
 
         String address = data["address"] ?? '';
         bool success = data["Status"] ?? false;
-        String phoneNumber = data["Phone"] ?? '';
+        String phoneNumber = data["phone_number"] ?? '';
         String username = data["username"] ?? '';
 
         // Save token to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString("token", token);
-        await prefs.setString("Phone no:", phoneNumber);
+        await prefs.setString("phone_number:", phoneNumber);
 
         // Create user model with response data
         _user = UserModel(
@@ -155,7 +155,7 @@ class AuthController extends ChangeNotifier {
   Future<void> logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
-    await prefs.remove('phone');
+    await prefs.remove('phone_number');
     _user = null;
     notifyListeners();
   }
