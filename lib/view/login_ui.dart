@@ -1,5 +1,3 @@
-
-
 // lib/view/login_view.dart
 import 'package:flutter/material.dart';
 import 'package:iot/dashboard.dart';
@@ -19,6 +17,7 @@ class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _Controller = TextEditingController();
+  bool _isObscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -96,11 +95,23 @@ class _LoginViewState extends State<LoginView> {
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isObscure = !_isObscure;
+                                });
+                              },
+                              icon: Icon(
+                                _isObscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          obscureText: true,
+                          obscureText: _isObscure,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your Password';

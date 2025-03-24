@@ -1,7 +1,10 @@
 // import 'dart:convert';
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:iot/login.dart';
+import 'package:iot/view/profile_view.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../provider/user_provider.dart';
@@ -134,31 +137,81 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.amberAccent,
+        leading: Builder(builder: (context) {
+          return IconButton(
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+            icon: const Icon(Icons.menu),
+          );
+        }),
         title: Text("Home Page"),
         actions: [
           // Profile icon
           IconButton(
             icon: Icon(Icons.account_circle),
-            onPressed: () => _showProfileInfo(context),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const profileView()),
+              );
+            },
             tooltip: 'View Profile',
           ),
           // Logout icon
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: logout,
-            tooltip: 'Logout',
-          )
+          // IconButton(
+          //   icon: Icon(Icons.logout),
+          //   onPressed: logout,
+          //   tooltip: 'Logout',
+          // )
         ],
+      ),
+      drawer: Drawer(
+        // width: 250,
+        child: ListView(
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 60, 61, 62),
+                  borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10))),
+              child: Lottie.asset('assets/water circle.json'),
+            ),
+            Card(
+              child: ListTile(
+                title: const Text('Add motors'),
+                trailing: Icon(Icons.arrow_forward_ios),
+                onTap: () {},
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: const Text(
+                  'logout',
+                  style: TextStyle(
+                      color: Colors.deepOrange, fontWeight: FontWeight.w800),
+                ),
+                trailing: Icon(
+                  Icons.logout,
+                  color: Colors.deepOrange,
+                ),
+                onTap: () => _showMyDialog(),
+              ),
+            )
+          ],
+        ),
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Text(
               "Welcome to Home",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 10),
             if (user != null)
               Text(
                 "Hello, ${user.firstName}!",
@@ -166,6 +219,26 @@ class _HomePageState extends State<HomePage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showMyDialog() async {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Confirm logout'),
+        content: const Text('Enter ok to logout'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'Cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => logout(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
