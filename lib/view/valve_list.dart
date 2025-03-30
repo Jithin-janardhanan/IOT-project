@@ -3,41 +3,49 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class ValveListView extends StatefulWidget {
+class ValveScreen extends StatefulWidget {
   final int pumpId;
   final String pumpName;
+  final int farmId;
 
-  const ValveListView({
+  const ValveScreen({
     Key? key,
     required this.pumpId,
     required this.pumpName,
+    required this.farmId,
   }) : super(key: key);
 
   @override
-  _ValveListViewState createState() => _ValveListViewState();
+  _ValveScreenState createState() => _ValveScreenState();
 }
 
-class _ValveListViewState extends State<ValveListView> {
+class _ValveScreenState extends State<ValveScreen> {
   List<Map<String, dynamic>> valves = [];
   bool isLoading = true;
-  String errorMessage = '';
+  bool isPumpActive = false;
 
   @override
   void initState() {
     super.initState();
-    fetchMotorValves();
+    fetchValves();
   }
 
-  Future<void> fetchMotorValves() async {
+  Future<void> fetchValves() async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString("token");
 
       if (token == null) {
         setState(() {
-          errorMessage = "No authentication token found. Please login.";
           isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Authentication token not found')),
+        );
         return;
       }
 
@@ -47,53 +55,63 @@ class _ValveListViewState extends State<ValveListView> {
         'Authorization': 'Token $token',
       };
 
-      var response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/farm/valves/?motor=${widget.pumpId}'),
+      final response = await http.get(
+        Uri.parse(
+            'http://127.0.0.1:8000/farm/farms/${widget.farmId}/motors/${widget.pumpId}/valves/'),
         headers: headers,
       );
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
 
+        // Convert valve data
+        List<Map<String, dynamic>> valveList = data
+            .map((valve) => {
+                  'id': valve['id'],
+                  'name': valve['name'] ?? 'Unknown Valve',
+                  'is_active': valve['is_active'] == 1,
+                })
+            .toList();
+
+        // Check if any valve is active to determine pump status
+        bool anyValveActive =
+            valveList.any((valve) => valve['is_active'] == true);
+
         setState(() {
-          valves = data
-              .map((valve) => {
-                    'id': valve['id'],
-                    'name': valve['name'] ?? 'Unnamed Valve',
-                    'status': valve['status'] ?? 'Unknown',
-                    'flow_rate': valve['flow_rate'] ?? 0.0,
-                    'last_updated': valve['last_updated'] ?? 'N/A',
-                  })
-              .toList();
+          valves = valveList;
+          isPumpActive = anyValveActive;
           isLoading = false;
         });
       } else {
         setState(() {
-          errorMessage =
-              "Failed to fetch valves. Error: ${response.statusCode}";
           isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Failed to load valves: ${response.statusCode}')),
+        );
         print(
             "Error fetching valves: ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
       setState(() {
-        errorMessage = "An error occurred while fetching valves";
         isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
       print("Failed to load valves: $e");
     }
   }
 
-  // Method to toggle valve status
-  Future<void> toggleValveStatus(int valveId, String currentStatus) async {
+  Future<void> toggleValveStatus(int valveId, bool currentStatus) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString("token");
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Authentication failed. Please login.")),
+          SnackBar(content: Text('Authentication token not found')),
         );
         return;
       }
@@ -104,37 +122,119 @@ class _ValveListViewState extends State<ValveListView> {
         'Authorization': 'Token $token',
       };
 
-      // Determine the new status
-      String newStatus = currentStatus == 'open' ? 'closed' : 'open';
-
-      var response = await http.patch(
-        Uri.parse('http://127.0.0.1:8000/farm/valves/$valveId/'),
+      final response = await http.patch(
+        Uri.parse(
+            'http://127.0.0.1:8000/farm/farms/${widget.farmId}/motors/${widget.pumpId}/valves/$valveId/'),
         headers: headers,
-        body: json.encode({'status': newStatus}),
+        body: json.encode({
+          'is_active': !currentStatus ? 1 : 0,
+        }),
       );
 
       if (response.statusCode == 200) {
         // Update local state
         setState(() {
-          int index = valves.indexWhere((valve) => valve['id'] == valveId);
-          if (index != -1) {
-            valves[index]['status'] = newStatus;
+          for (var i = 0; i < valves.length; i++) {
+            if (valves[i]['id'] == valveId) {
+              valves[i]['is_active'] = !currentStatus;
+            }
           }
+
+          // Update pump status based on valves
+          isPumpActive = valves.any((valve) => valve['is_active'] == true);
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Valve status updated to $newStatus")),
+          SnackBar(
+            content: Text(currentStatus
+                ? 'Valve turned OFF successfully'
+                : 'Valve turned ON successfully'),
+            backgroundColor: !currentStatus ? Colors.green : Colors.red,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to update valve status")),
+          SnackBar(
+              content: Text(
+                  'Failed to toggle valve status: ${response.statusCode}')),
         );
+        print(
+            "Error toggling valve: ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
-      print("Error toggling valve status: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("An error occurred")),
+        SnackBar(content: Text('Error: $e')),
       );
+      print("Failed to toggle valve: $e");
+    }
+  }
+
+  Future<void> toggleAllValves(bool turnOn) async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString("token");
+
+      if (token == null) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Authentication token not found')),
+        );
+        return;
+      }
+
+      var headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Token $token',
+      };
+
+      // Update each valve
+      List<Future> futures = [];
+      for (var valve in valves) {
+        futures.add(http.patch(
+          Uri.parse(
+              'http://127.0.0.1:8000/farm/farms/${widget.farmId}/motors/${widget.pumpId}/valves/${valve['id']}/'),
+          headers: headers,
+          body: json.encode({
+            'is_active': turnOn ? 1 : 0,
+          }),
+        ));
+      }
+
+      // Wait for all requests to complete
+      await Future.wait(futures);
+
+      // Update local state
+      setState(() {
+        for (var i = 0; i < valves.length; i++) {
+          valves[i]['is_active'] = turnOn;
+        }
+        isPumpActive = turnOn;
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(turnOn
+              ? 'All valves turned ON successfully'
+              : 'All valves turned OFF successfully'),
+          backgroundColor: turnOn ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      print("Failed to toggle all valves: $e");
     }
   }
 
@@ -144,94 +244,162 @@ class _ValveListViewState extends State<ValveListView> {
       appBar: AppBar(
         title: Text('${widget.pumpName} - Valves'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: fetchMotorValves,
-          ),
-        ],
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          : Column(
+              children: [
+                // Pump status card
+                Card(
+                  margin: EdgeInsets.all(16),
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color:
+                      isPumpActive ? Colors.green.shade50 : Colors.red.shade50,
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              widget.pumpName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  isPumpActive ? 'Active' : 'Inactive',
+                                  style: TextStyle(
+                                    color: isPumpActive
+                                        ? Colors.green
+                                        : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isPumpActive
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ElevatedButton.icon(
+                              icon: Icon(Icons.power_settings_new),
+                              label: Text('Turn All ON'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => toggleAllValves(true),
+                            ),
+                            ElevatedButton.icon(
+                              icon: Icon(Icons.power_off),
+                              label: Text('Turn All OFF'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => toggleAllValves(false),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Valves heading
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        errorMessage,
-                        style: TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
+                        'Valves (${valves.length})',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: fetchMotorValves,
-                        child: Text('Retry'),
+                        onPressed: fetchValves,
+                        child: Text('Refresh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                )
-              : valves.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('No valves found for this motor'),
-                          SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: fetchMotorValves,
-                            child: Text('Refresh'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: EdgeInsets.all(16),
-                      itemCount: valves.length,
-                      itemBuilder: (context, index) {
-                        final valve = valves[index];
-                        return Card(
-                          margin: EdgeInsets.only(bottom: 16),
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: ListTile(
-                            leading: Icon(
-                              valve['status'] == 'open'
-                                  ? Icons.water_drop_outlined
-                                  : Icons.water_drop_sharp,
-                              color: valve['status'] == 'open'
-                                  ? Colors.blue
-                                  : Colors.grey,
-                              size: 40,
-                            ),
-                            title: Text(
-                              valve['name'],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                ),
+
+                // Valves list
+                Expanded(
+                  child: valves.isEmpty
+                      ? Center(child: Text('No valves found'))
+                      : ListView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: valves.length,
+                          itemBuilder: (context, index) {
+                            final valve = valves[index];
+                            final isActive = valve['is_active'] as bool;
+
+                            return Card(
+                              margin: EdgeInsets.only(bottom: 16),
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Status: ${valve['status']}'),
-                                Text('Flow Rate: ${valve['flow_rate']} L/min'),
-                                Text('Last Updated: ${valve['last_updated']}'),
-                              ],
-                            ),
-                            trailing: Switch(
-                              value: valve['status'] == 'open',
-                              onChanged: (bool value) {
-                                toggleValveStatus(valve['id'], valve['status']);
-                              },
-                              activeColor: Colors.green,
-                              inactiveThumbColor: Colors.red,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              color: isActive
+                                  ? Colors.green.shade50
+                                  : Colors.red.shade50,
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                leading: Icon(
+                                  Icons.water_drop,
+                                  color: isActive ? Colors.green : Colors.red,
+                                  size: 40,
+                                ),
+                                title: Text(
+                                  valve['name'],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                trailing: Switch(
+                                  value: isActive,
+                                  activeColor: Colors.green,
+                                  inactiveTrackColor: Colors.red.shade200,
+                                  onChanged: (value) =>
+                                      toggleValveStatus(valve['id'], isActive),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
     );
   }
 }
