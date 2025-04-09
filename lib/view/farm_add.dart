@@ -121,7 +121,7 @@ class _AddFarmPageState extends State<AddFarmPage> {
 
       // Send POST request
       var response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/farm/farms/'),
+        Uri.parse('https://fahadrahman122.pythonanywhere.com/farm/farms/'),
         headers: headers,
         body: json.encode(requestBody),
       );

@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
 
     var request = http.Request(
       'POST',
-      Uri.parse('http://127.0.0.1:8000/logout/'),
+      Uri.parse('https://fahadrahman122.pythonanywhere.com/logout/'),
     );
 
     request.headers.addAll(headers);
@@ -71,19 +71,21 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amberAccent,
+        elevation: 2,
         leading: Builder(builder: (context) {
           return IconButton(
             onPressed: () {
               Scaffold.of(context).openDrawer();
             },
             icon: const Icon(Icons.menu),
+            tooltip: 'Open menu',
           );
         }),
-        title: Text("IOT "),
+        title: const Text("IOT Dashboard",
+            style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          // Profile icon
           IconButton(
-            icon: Icon(Icons.account_circle),
+            icon: const Icon(Icons.account_circle),
             onPressed: () {
               Navigator.push(
                 context,
@@ -95,76 +97,163 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       drawer: Drawer(
-        // width: 250,
-        child: ListView(
+        child: Column(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 60, 61, 62),
+              decoration: const BoxDecoration(
+                  color: Color.fromARGB(255, 60, 61, 62),
                   borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(10),
-                      bottomRight: Radius.circular(10))),
-              child: Lottie.asset('assets/water circle.json'),
-            ),
-            Card(
-              child: ListTile(
-                title: const Text('Add Farms'),
-                trailing: Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddFarmPage(),
-                      ));
-                },
+                      bottomLeft: Radius.circular(15),
+                      bottomRight: Radius.circular(15))),
+              child: Center(
+                child: Lottie.asset('assets/water circle.json'),
               ),
             ),
-            Card(
-              child: ListTile(
-                title: const Text(
-                  'logout',
-                  style: TextStyle(
-                      color: Colors.deepOrange, fontWeight: FontWeight.w800),
-                ),
-                trailing: Icon(
-                  Icons.logout,
-                  color: Colors.deepOrange,
-                ),
-                onTap: () => _showMyDialog(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      leading:
+                          const Icon(Icons.add_business, color: Colors.green),
+                      title: const Text('Add Farms',
+                          style: TextStyle(fontWeight: FontWeight.w500)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddFarmPage(),
+                            ));
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      leading:
+                          const Icon(Icons.logout, color: Colors.deepOrange),
+                      title: const Text(
+                        'Logout',
+                        style: TextStyle(
+                            color: Colors.deepOrange,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      onTap: () => _showMyDialog(),
+                    ),
+                  ),
+                ],
               ),
-            )
+            ),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  "Welcome to Home",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 10),
-                if (user != null)
-                  Text(
-                    "Hello, ${user.firstName}!",
-                    style: TextStyle(fontSize: 18),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Colors.grey],
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 5,
                   ),
-                SizedBox(height: 20),
-                Text(
-                  "Your Farms",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ],
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
-              ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Welcome to Your Farm Dashboard",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (user != null)
+                    Text(
+                      "Hello, ${user.firstName}!",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.blueGrey[600],
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          // Farm list takes the rest of the available space
-          Expanded(
-            child: FarmListView(),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Your Farms",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      // Add functionality to refresh or view all farms
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text("Refresh"),
+                  ),
+                ],
+              ),
+            ),
+            // Farm list takes the rest of the available space
+            Expanded(
+              child: FarmListView(),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddFarmPage()),
+          );
+        },
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.add),
+        tooltip: 'Add New Farm',
       ),
     );
   }

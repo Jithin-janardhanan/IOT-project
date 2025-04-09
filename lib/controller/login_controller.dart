@@ -33,7 +33,7 @@ class AuthController extends ChangeNotifier {
         'Content-Type': 'application/json'
       };
 
-      var uri = Uri.parse('http://127.0.0.1:8000/login/');
+      var uri = Uri.parse('https://fahadrahman122.pythonanywhere.com/login/');
       var body = json.encode({"phone_number": phone, "password": password});
 
       var response = await http
