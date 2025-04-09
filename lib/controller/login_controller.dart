@@ -48,7 +48,7 @@ class AuthController extends ChangeNotifier {
         String token = data["token"] ?? '';
 
         // Extract user data from response
-        String id = (data["id"] ?? '').toString(); 
+        String id = (data["id"] ?? '').toString();
         String email = data["email"] ?? '';
         String firstName = data["first_name"] ?? '';
         String lastName = data["last_name"] ?? '';

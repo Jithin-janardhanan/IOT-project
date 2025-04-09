@@ -23,6 +23,7 @@ class _ValveScreenState extends State<ValveScreen> {
   List<Map<String, dynamic>> valves = [];
   bool isLoading = true;
   bool isPumpActive = false;
+  bool isTogglingPump = false;
 
   @override
   void initState() {
@@ -238,6 +239,86 @@ class _ValveScreenState extends State<ValveScreen> {
     }
   }
 
+  // NEW FUNCTION: Toggle pump status directly
+  Future<void> togglePumpStatus() async {
+    setState(() {
+      isTogglingPump = true;
+    });
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString("token");
+
+      if (token == null) {
+        setState(() {
+          isTogglingPump = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Authentication token not found')),
+        );
+        return;
+      }
+
+      var headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Token $token',
+      };
+
+      // Toggle pump status
+      final response = await http.patch(
+        Uri.parse(
+            'http://127.0.0.1:8000/farm/farms/${widget.farmId}/motors/${widget.pumpId}/'),
+        headers: headers,
+        body: json.encode({
+          'is_active': isPumpActive ? 0 : 1,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        bool newStatus = !isPumpActive;
+
+        // If turning off the pump, also turn off all valves
+        if (!newStatus) {
+          await toggleAllValves(false);
+        }
+
+        setState(() {
+          isPumpActive = newStatus;
+          isTogglingPump = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus
+                ? 'Motor turned ON successfully'
+                : 'Motor turned OFF successfully'),
+            backgroundColor: newStatus ? Colors.green : Colors.red,
+          ),
+        );
+      } else {
+        setState(() {
+          isTogglingPump = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Failed to toggle motor status: ${response.statusCode}')),
+        );
+        print(
+            "Error toggling motor: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      setState(() {
+        isTogglingPump = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      print("Failed to toggle motor: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -299,21 +380,40 @@ class _ValveScreenState extends State<ValveScreen> {
                           ],
                         ),
                         SizedBox(height: 16),
+                        // NEW: Motor on/off button
+                        ElevatedButton.icon(
+                          icon: Icon(
+                            isPumpActive ? Icons.power_off : Icons.power_settings_new,
+                            size: 24,
+                          ),
+                          label: Text(
+                            isPumpActive ? 'Turn Motor OFF' : 'Turn Motor ON',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isPumpActive ? Colors.red : Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            minimumSize: Size(double.infinity, 50),
+                          ),
+                          onPressed: isTogglingPump ? null : togglePumpStatus,
+                        ),
+                        SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             ElevatedButton.icon(
                               icon: Icon(Icons.power_settings_new),
-                              label: Text('Turn All ON'),
+                              label: Text('Turn All Valves ON'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
                               ),
-                              onPressed: () => toggleAllValves(true),
+                              onPressed: isPumpActive ? () => toggleAllValves(true) : null,
                             ),
                             ElevatedButton.icon(
                               icon: Icon(Icons.power_off),
-                              label: Text('Turn All OFF'),
+                              label: Text('Turn All Valves OFF'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
@@ -390,8 +490,9 @@ class _ValveScreenState extends State<ValveScreen> {
                                   value: isActive,
                                   activeColor: Colors.green,
                                   inactiveTrackColor: Colors.red.shade200,
-                                  onChanged: (value) =>
-                                      toggleValveStatus(valve['id'], isActive),
+                                  onChanged: isPumpActive
+                                      ? (value) => toggleValveStatus(valve['id'], isActive)
+                                      : null,
                                 ),
                               ),
                             );
@@ -403,3 +504,4 @@ class _ValveScreenState extends State<ValveScreen> {
     );
   }
 }
+
