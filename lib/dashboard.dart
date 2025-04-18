@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../provider/user_provider.dart';
 import 'view/farm_add.dart';
 import 'view/login_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,7 +18,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Future<void> logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString("token"); // Retrieve stored token
+    String? token = prefs.getString("token"); // Retrieve stored token 
 
     if (token == null) {
       print("No token found, already logged out.");
@@ -113,30 +114,31 @@ class _HomePageState extends State<HomePage> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
-                  Card(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      leading:
-                          const Icon(Icons.add_business, color: Colors.green),
-                      title: const Text('Add Farms',
-                          style: TextStyle(fontWeight: FontWeight.w500)),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddFarmPage(),
-                            ));
-                      },
-                    ),
-                  ),
+                  // Card(
+                  //   margin:
+                  //       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //   elevation: 2,
+                  //   shape: RoundedRectangleBorder(
+                  //     borderRadius: BorderRadius.circular(12),
+                  //   ),
+                  //   child: ListTile(
+                  //     contentPadding: const EdgeInsets.symmetric(
+                  //         horizontal: 16, vertical: 4),
+                  //     leading:
+                  //         const Icon(Icons.add_business, color: Colors.green),
+                  //     title: const Text('Add Farms',
+                  //         style: TextStyle(fontWeight: FontWeight.w500)),
+                  //     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  //     onTap: () {
+                  //       Navigator.pushReplacement(
+                  //           context,
+                  //           MaterialPageRoute(
+                  //             builder: (context) => AddFarmPage(),
+                  //           ));
+                      
+                  //     },
+                  //   ),
+                  // ),
                   const SizedBox(height: 8),
                   Card(
                     margin:
@@ -156,7 +158,32 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.deepOrange,
                             fontWeight: FontWeight.w600),
                       ),
-                      onTap: () => _showMyDialog(),
+                      onTap: () {
+                            launchUrl(Uri.parse(
+                                "https://www.freeprivacypolicy.com/live/f2379df2-bc9a-444b-9b35-a71f2d885496"));
+                          },
+                    ),
+                  ),
+                   const SizedBox(height: 8),
+                  Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      leading:
+                          const Icon(Icons.logout, color: Colors.deepOrange),
+                      title: const Text(
+                        'Privacy and pollicy',
+                        style: TextStyle(
+                            color: Colors.deepOrange,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      onTap: () =>(),
                     ),
                   ),
                 ],

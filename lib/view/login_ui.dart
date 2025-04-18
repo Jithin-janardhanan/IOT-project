@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:iot/dashboard.dart';
 import 'package:provider/provider.dart';
-
 import '../controller/login_controller.dart';
 import '../provider/user_provider.dart';
 
@@ -193,18 +192,18 @@ class _LoginViewState extends State<LoginView> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text("Don't have an account?"),
-                            TextButton(
-                              onPressed: () {
-                                // Navigate to signup page
-                              },
-                              child: const Text('Sign Up'),
-                            ),
-                          ],
-                        ),
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.center,
+                        //   children: [
+                        //     const Text("Don't have an account?"),
+                        //     TextButton(
+                        //       onPressed: () {
+                        //         // Navigate to signup page
+                        //       },
+                        //       child: const Text('Sign Up'),
+                        //     ),
+                        //   ],
+                        // ),
                       ],
                     ),
                   ),

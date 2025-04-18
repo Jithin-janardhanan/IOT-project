@@ -59,7 +59,9 @@ class _PumpOperationViewState extends State<PumpOperationView> {
             'https://fahadrahman122.pythonanywhere.com/farm/farms/${widget.farmId}/motors/${widget.pumpId}/'),
         headers: headers,
       );
-
+      print('$response');
+      print(
+          '*************************************************************************');
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
 
@@ -153,6 +155,8 @@ class _PumpOperationViewState extends State<PumpOperationView> {
 
       var url =
           'https://fahadrahman122.pythonanywhere.com/farm/farms/${widget.farmId}/motors/${widget.pumpId}/updation/';
+      print(url);
+      print('@@@@@@@@@@@@@@@@@@@0');
 
       var requestBody = {
         "id": widget.pumpId,
@@ -255,6 +259,7 @@ class _PumpOperationViewState extends State<PumpOperationView> {
         "name": "Valve $valveId", // You might want to get the actual valve name
         "is_active": currentStatus ? 0 : 1, // Toggle the status
       };
+      print('5555555555555555555550');
 
       var request = http.Request(
         'PUT',
@@ -598,4 +603,4 @@ class _PumpOperationViewState extends State<PumpOperationView> {
       ),
     );
   }
-} 
+}
